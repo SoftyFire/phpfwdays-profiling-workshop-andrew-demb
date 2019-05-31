@@ -45,7 +45,7 @@ class StatsGenerator
      */
     private function articlesCount(): int
     {
-        return \count(Article::find()->all());
+        return Article::find()->count();
     }
 
     /**
