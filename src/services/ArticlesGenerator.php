@@ -25,7 +25,7 @@ class ArticlesGenerator
      *
      * @param LoremIpsum $ipsum
      */
-    function __construct(LoremIpsum $ipsum)
+    public function __construct(LoremIpsum $ipsum)
     {
         $this->ipsum = $ipsum;
     }
