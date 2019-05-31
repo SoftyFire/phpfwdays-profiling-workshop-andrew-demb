@@ -3,6 +3,7 @@
 namespace app\services;
 
 use app\models\Article;
+use app\models\ArticleTags;
 use app\models\Tag;
 use joshtronic\LoremIpsum;
 
@@ -15,16 +16,32 @@ use joshtronic\LoremIpsum;
  */
 class ArticlesGenerator
 {
+    private const POSSIBLE_TAGS = [
+        'hit',
+        'politics',
+        'culture',
+        'technologies',
+        'health',
+        'music',
+        'cinema',
+        'climate',
+        'science',
+        'nature',
+        'photography',
+        'biology',
+    ];
+
     /**
      * @var LoremIpsum
      */
     private $ipsum;
 
     /**
-     * ArticlesGenerator constructor.
-     *
-     * @param LoremIpsum $ipsum
+     * @var Tag[]
+     * @psalm-var array<string, Tag>
      */
+    private $ensuredTags = [];
+
     public function __construct(LoremIpsum $ipsum)
     {
         $this->ipsum = $ipsum;
@@ -45,8 +62,15 @@ class ArticlesGenerator
     }
 
     /**
-     * @return Article
+     * @param int $number Number of articles to be generated
+     * @return Article[]
      */
+    public function generateBatch(int $number): array
+    {
+        $this->fillupTags();
+        return $this->generate($number);
+    }
+
     private function createRandomArticle(): Article
     {
         $article = new Article([
@@ -54,78 +78,117 @@ class ArticlesGenerator
             'text' => $this->generateRandomText(),
         ]);
         $article->save();
-        $this->generateTagsForArticle($article);
+
+        $rows = [];
+        $tags = $this->generateTags();
+        foreach ($tags as $tag) {
+            $rows[] = [$article->id, $tag->id];
+        }
+
+        \Yii::$app->db
+            ->createCommand()
+            ->batchInsert(ArticleTags::tableName(), ['article_id', 'tag_id'], $rows)
+            ->execute();
+
+        $article->populateRelation('tags', $tags);
 
         return $article;
     }
 
-    /**
-     * @return Tag
-     */
     private function getRandomTag(): Tag
     {
-        $tags = [
-            'hit',
-            'politics',
-            'culture',
-            'technologies',
-            'health',
-            'music',
-            'cinema',
-            'climate',
-            'science',
-            'nature',
-            'photography',
-            'biology',
-        ];
-
-        $i = mt_rand(0, count($tags) - 1);
-
-        return $this->ensureTag($tags[$i]);
+        return $this->ensureTag(
+            $this->lookupRandomTagName()
+        );
     }
 
-    /**
-     * @param string $name
-     * @return Tag
-     */
+    private function lookupRandomTagName(): string
+    {
+        $i = random_int(0, count(self::POSSIBLE_TAGS) - 1);
+
+        return self::POSSIBLE_TAGS[$i];
+    }
+
     private function ensureTag(string $name): Tag
     {
+        if (isset($this->ensuredTags[$name])) {
+            return $this->ensuredTags[$name];
+        }
+
         if ($tag = Tag::find()->where(['name' => $name])->one()) {
+            $this->ensuredTags[$name] = $tag;
             return $tag;
         }
 
         $tag = new Tag(['name' => $name]);
         $tag->save();
+        $this->ensuredTags[$name] = $tag;
 
         return $tag;
     }
 
     /**
-     * @param Article $article
-     * @void
+     * @return Tag[]
      */
-    private function generateTagsForArticle($article): void
+    private function generateTags(): array
     {
-        $count = mt_rand(1, 5);
+        $count = random_int(1, 5);
 
+        $tags = [];
         for ($i = 0; $i < $count; $i++) {
-            $article->link('tags', $this->getRandomTag());
+            $tags[] = $this->getRandomTag();
         }
+
+        return $tags;
     }
 
-    /**
-     * @return string
-     */
     private function generateRandomTitle(): string
     {
         return $this->ipsum->words(8);
     }
 
-    /**
-     * @return string
-     */
     private function generateRandomText(): string
     {
         return $this->ipsum->paragraphs(2);
+    }
+
+    private function fillupTags(): void
+    {
+        $newTagNames = [];
+        $newRows = [];
+        $existedTags = $this->fetchTagsByNames(self::POSSIBLE_TAGS);
+        foreach (self::POSSIBLE_TAGS as $possibleTag) {
+            if (isset($existedTags[$possibleTag])) {
+                continue;
+            }
+
+            $newTagNames[] = $possibleTag;
+            $newRows[] = [$possibleTag];
+        }
+
+        if ([] === $newRows) {
+            return;
+        }
+
+        \Yii::$app->db
+            ->createCommand()
+            ->batchInsert(Tag::tableName(), ['name'], $newRows)
+            ->execute();
+
+        $this->fetchTagsByNames($newTagNames);
+    }
+
+    private function fetchTagsByNames(array $names): array
+    {
+        $existedTags = Tag::find()
+            ->where(['name' => $names])
+            ->indexBy('name')
+            ->all();
+
+        foreach ($existedTags as $tagName => $existedTag) {
+            $this->ensuredTags[$tagName] = $existedTag;
+        }
+
+        return $existedTags;
     }
 }

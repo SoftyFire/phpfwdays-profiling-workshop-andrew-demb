@@ -52,7 +52,7 @@ class SiteController extends Controller
      */
     public function actionGenerateArticles(int $count = 40): string
     {
-        $this->articlesGenerator->generate($count);
+        $this->articlesGenerator->generateBatch($count);
 
         return $this->render('generation-result', [
             'number' => $count
