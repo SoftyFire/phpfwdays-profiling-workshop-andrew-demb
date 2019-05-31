@@ -4,6 +4,7 @@ namespace app\services;
 
 use app\models\Article;
 use app\models\ArticlesStats;
+use app\models\ArticleTags;
 
 /**
  * Class StatsGenerator
@@ -71,17 +72,16 @@ class StatsGenerator
      */
     private function countPerTag(): array
     {
-        /** @var Article[] $articles */
-        $articles = Article::find()->all();
+        /** @var ArticleTags[] $articles */
+        $articles = ArticleTags::find()->with('tag')->all();
         $tagsCount = [];
 
         foreach ($articles as $article) {
-            foreach ($article->tags as $tag) {
-                if (!isset($tagsCount[$tag->name])) {
-                    $tagsCount[$tag->name] = 1;
-                } else {
-                    $tagsCount[$tag->name]++;
-                }
+            $tag = $article->tag;
+            if (!isset($tagsCount[$tag->name])) {
+                $tagsCount[$tag->name] = 1;
+            } else {
+                $tagsCount[$tag->name]++;
             }
         }
 
