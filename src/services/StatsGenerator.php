@@ -29,7 +29,7 @@ class StatsGenerator
      */
     private function countPerWord(): array
     {
-        /** @var Article $articles */
+        /** @var Article[] $articles */
         $articles = Article::find()->all();
         $wordsCount = [];
 
@@ -52,7 +52,7 @@ class StatsGenerator
      * @param Article $article
      * @param array $wordsCount
      */
-    private function countWordsInArticle(Article $article, &$wordsCount): void
+    private function countWordsInArticle(Article $article, array &$wordsCount): void
     {
         $text = preg_replace('/[^a-z0-9 ]/', ' ', mb_strtolower($article->text));
         $words = preg_split('/\s/', $text, -1, PREG_SPLIT_NO_EMPTY);
