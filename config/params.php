@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'newsApiToken' => null,
+    'newsApiToken' => \getenv('NEWS_API_TOKEN') ?: null,
 ];

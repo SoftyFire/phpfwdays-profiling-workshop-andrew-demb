@@ -1,5 +1,9 @@
 <?php
 
+if (file_exists(__DIR__ . '/../.env')) {
+    (new \Symfony\Component\Dotenv\Dotenv())->load(__DIR__ . '/../.env');
+}
+
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
 
