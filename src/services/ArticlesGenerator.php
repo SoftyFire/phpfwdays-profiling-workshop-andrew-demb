@@ -38,7 +38,7 @@ class ArticlesGenerator
     {
         $articles = [];
         for ($i = 0; $i < $number; $i++) {
-            $articles[] = $this->createRandomArticles();
+            $articles[] = $this->createRandomArticle();
         }
 
         return $articles;
@@ -47,7 +47,7 @@ class ArticlesGenerator
     /**
      * @return Article
      */
-    private function createRandomArticles(): Article
+    private function createRandomArticle(): Article
     {
         $article = new Article([
             'title' => $this->generateRandomTitle(),
