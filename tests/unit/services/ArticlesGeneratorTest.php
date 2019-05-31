@@ -66,13 +66,27 @@ class ArticlesGeneratorTest extends TestCase
     private function generateFiveArticlesBatch(): void
     {
         $articles = $this->generator->generateBatch(5);
-        $this->assertOneArticle($articles);
+        $this->assertArticleCollection(5, $articles);
     }
 
     private function assertOneArticle(array $articles): void
     {
         $this->assertContainsOnlyInstancesOf(Article::class, $articles);
-        $article = $articles[0];
+        $this->assertArticleValid($articles[0]);
+    }
+
+    private function assertArticleCollection(int $expectedCount, array $articles): void
+    {
+        $this->assertContainsOnlyInstancesOf(Article::class, $articles);
+
+        $this->assertCount($expectedCount, $articles);
+        foreach ($articles as $article) {
+            $this->assertArticleValid($article);
+        }
+    }
+
+    private function assertArticleValid(Article $article): void
+    {
         $this->assertNotEmpty($article->title);
         $this->assertNotEmpty($article->text);
         $this->assertNotEmpty($article->id);
